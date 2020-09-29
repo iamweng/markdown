@@ -1,5 +1,10 @@
 # Hadoop
 
+- @Author: Yuxin Weng
+- @Date: 2020/09/29
+- @Repository: https://github.com/iamweng/markdown.git
+- @Software_URL: https://share.weiyun.com/UFTwRyvk
+
 ## 安装之前准备
 ```bash
 # 关闭 firewalld
