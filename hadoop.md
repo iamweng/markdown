@@ -485,6 +485,187 @@ zkServer.sh status
 
 # hbase
 
+## 安装以及配置 habse 软件包目
+
+### master
+```bash
+# 解压 hbase 软件包
+tar -zxvf /opt/software/hbase-1.2.1-bin.tar.gz -C /usr/local/src/
+# 追加 /etc/profile 文件
+vi /etc/profile
+
+export HBASE_HOME=/usr/local/src/hbase-1.2.1
+export PATH=$HBASE_HOME/bin:$PATH
+
+# 刷新环境变量
+source /etc/profile
+# 修改 hbase-env.sh 文件
+vi /usr/local/src/hbase-1.2.1-bin/conf/hbase-env.sh
+
+export JAVA_HOME=/opt/software/jdk1.8.0_241
+export HBASE_MANAGES_ZK=false
+export HBASE_CLASSPATH=/opt/software/hadoop-2.6.5/etc/hadoop/
+
+# 修改 hbase-site.xml 文件
+vi /usr/local/src/hbase-1.2.1/conf/hbase-site.xml
+
+# 使用 9000 端口
+<property>
+  <name>hbase.rootdir</name>
+  <value>hdfs://master:9000/hbase</value>
+</property>
+
+# 使用 master 节点 60010 端口
+<property>
+  <name>hbase.master.info.port</name>
+  <value>60010</value>
+</property>
+
+# 使用 master 节点 2181 端口
+<property>
+  <name>hbase.zookeeper.property.clientPort</name>
+  <value>2181</value>
+</property>
+
+# ZooKeeper 超时时间
+<property>
+  <name>zookeeper.session.timeout</name>
+  <value>120000</value>
+</property>
+
+# ZooKeeper 管理节点
+<property>
+  <name>hbase.zookeeper.quorum</name>
+  <value>master,slave01,slave02</value>
+</property>
+
+# HBase 临时文件路径
+<property>
+  <name>hbase.tmp.dir</name>
+  <value>/usr/local/src/hbase-1.2.1/tmp</value>
+</property>
+
+# 使用分布式 HBase
+<property>
+  <name>hbase.cluster.distributed</name>
+  <value>true</value>
+</property>
+
+# 修改 regionservers 文件
+vi /usr/local/src/hbase-1.2.1/conf/regionservers
+
+slave01
+slave02
+
+# 创建 hbase.tmp.dir 目录
+mkdir /usr/local/src/hbase-1.2.1/tmp
+# 将 hbase 安装目录分发给 slave01 slave02
+scp -r /usr/local/src/hbase-1.2.1/ root@slave01:/usr/local/src/;scp -r /usr/local/src/hbase-1.2.1/ root@slave02:/usr/local/src/
+# 修改 hadoop 目录所属用户
+chown -R hadoop:hadoop /usr/local/src/hbase-1.2.1/
+# 切换用户为 hadoop
+su - hadoop
+# 刷新环境变量
+source /etc/profile
+# 启动 hadoop
+start-all.sh
+# 启动 zookeeper
+zkServer.sh start
+# 启动 hbase
+start-hbase.sh
+# 访问 master:60010 验证服务
+http://192.168.30.130:60010
+# 关闭 hbase
+stop-hbase.sh
+```
+
+### slaves
+```bash
+# 追加 /etc/profile 文件
+vi /etc/profile
+
+export HBASE_HOME=/usr/local/hbase-1.2.1
+export PATH=$HBASE_HOME/bin:$PATH
+# 刷新环境变量
+source /etc/profile
+# 修改 hadoop 目录所属用户
+chown -R hadoop:hadoop /usr/local/src/hbase-1.2.1/
+# 切换用户为 hadoop
+su - hadoop
+# 刷新环境变量
+source /etc/profile
+```
+
+## 常用命令
+```bash
+# 进入 hbase 命令行
+hbase shell
+# 查看数据库状态
+satatus
+# 查看数据库版本
+version
+# 查看数据表
+list
+# 创建表 scores 两个字段 grade course
+create 'scores','grade','course'
+```
+
 # sqoop
 
+## 安装以及配置 sqoop
+```bash
+# 解压 sqoop 软件包
+tar -zxvf /opt/software/sqoop-1.4.7.bin_hadoop-2.6.0.tar.gz -C /usr/local/src
+# 修改 sqoop 安装目录所属用户
+cd /usr/local/src; chown -R hadoop:hadoop sqoop-1.4.7.bin__hadoop-2.6.0
+# 拷贝 sqoop-env 模板文件
+cd /usr/local/src/sqoop-1.4.7.bin__hadoop-2.6.0/conf/;cp sqoop-env-template.sh sqoop-env.sh
+# 修改 sqoop-env 配置文件
+vi sqoop-env.sh
+
+export HADOOP_COMMON_HOME=/opt/software/hadoop-2.6.5
+export HADOOP_MAPRED_HOME=/opt/software/hadoop-2.6.5
+export HBASE_HOME=/usr/local/src/hbase-1.2.1
+export HIVE_HOME=/usr/local/src/apache-hive-2.0.0-bin
+
+# 追加 /etc/profile 文件
+vi /etc/profile
+
+export SQOOP_HOME=/usr/local/src/sqoop-1.4.7.bin__hadoop-2.6.0
+export PATH=$PATH:$SQOOP_HOME/bin
+export CLASSPATH=$CLASSPATH:$SQOOP_HOME/lib
+
+# 拷贝 jdbc 驱动包
+cp /opt/software/mysql-connector-java-5.1.49.jar /usr/local/src/sqoop-1.4.7.bin__hadoop-2.6.0/lib/
+# 配置 sqoop 连接 hive
+cp /usr/local/src/apache-hive-2.0.0-bin/lib/hive-common-2.0.0.jar /usr/local/src/sqoop-1.4.7.bin__hadoop-2.6.0/lib/
+# 测试 sqoop 是否正常连接 密码Password123$
+sqoop list-databases --connect jdbc:mysql://127.0.0.1:3306/ --username root -P
+```
+
 # flume
+
+## 安装以及配置 flume
+```bash
+# 解压 flume 软件包
+tar zxvf /opt/software/apache-flume-1.6.0-bin.tar.gz -C/usr/local/src
+# 修改 flume 安装目录所属用户
+cd /usr/local/src; chown -R hadoop:hadoop apache-flume-1.6.0-bin
+# 追加 /etc/profile 文件
+vi /etc/profile
+
+export FLUME_HOME=/usr/local/src/apache-flume-1.6.0-bin
+export PATH=$PATH:$FLUME_HOME/bin
+
+# 刷新环境变量
+source /etc/profile
+# 拷贝 flume-env.sh 模板文件
+cd /usr/local/src/apache-flume-1.6.0-bin/conf; cp flume-env.sh.template flume-env.sh
+# 修改 flume-env.sh 配置文件
+vi /usr/local/src/apache-flume-1.6.0-bin/conf/flume-env.sh
+
+export JAVA_HOME=/usr/local/src/jdk1.8.0_241
+
+# 验证 flume 安装是否成功
+flume-ng version
+```
