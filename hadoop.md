@@ -3,7 +3,7 @@
 - @Author: Yuxin Weng
 - @Date: 2020/09/29
 - @Repository: https://github.com/iamweng/markdown.git
-- @Software_URL: https://share.weiyun.com/UFTwRyvk
+- @Software_URL: https://share.weiyun.com/UFTwRy vk
 
 ## 安装之前准备
 ```bash
@@ -354,21 +354,32 @@ exit;
 ## 安装以及配置 hive 软件包
 ```bash
 # 解压 hive 软件包
-tar -zxvf /opt/software/apache-hive-2.0.0-bin.tar.gz -C /usr/local/src
+tar -zxvf /opt/software/apache-hive-1.2.1-bin.tar.gz -C /usr/local/src
 # 修改 hive 目录归属用户和用户组为 hadoop
-chown -R hadoop:hadoop /usr/local/src/apache-hive-2.0.0-bin
+chown -R hadoop:hadoop /usr/local/src/apache-hive-1.2.1-bin
 # 设置 hive 环境变量
 vi /etc/profile
 
-export HIVE_HOME=/usr/local/src/apache-hive-2.0.0-bin
+export HIVE_HOME=/usr/local/src/apache-hive-1.2.1-bin
 export PATH=$PATH:/$HIVE_HOME/bin
 
 # 刷新环境变量
 source /etc/profile
+# 拷贝 hive-env.sh 模板文件
+cd /usr/local/src/apache-hive-1.2.1-bin/conf;cp hive-env.sh.template hive-env.sh
+# 修改 hive-env.sh 文件
+vi hive-env.sh
+
+export HADOOP_HOME=/opt/software/hadoop-2.6.5
+export HIVE_CONF_DIR=/usr/local/src/apache-hive-1.2.1-bin/conf
+# 删除 hadoop 目录下旧版本jline
+rm -rf /opt/software/hadoop-2.6.5/share/hadoop/yarn/lib/jline-0.9.94.jar
+# 拷贝 新版本jline 到 hadoop 目录
+mv /usr/local/src/apache-hive-1.2.1-bin/lib/jline-2.12.jar /opt/software/hadoop-2.6.5/share/hadoop/yarn/lib
 # 重命名 hive 配置文件
-cp /usr/local/src/apache-hive-2.0.0-bin/conf/hive-default.xml.template /usr/local/src/apache-hive-2.0.0-bin/conf/hive-site.xml
+cp /usr/local/src/apache-hive-1.2.1-bin/conf/hive-default.xml.template /usr/local/src/apache-hive-1.2.1-bin/conf/hive-site.xml
 # 修改 hive 配置文件
-vi /usr/local/src/apache-hive-2.0.0-bin/conf/hive-site.xml
+vi /usr/local/src/apache-hive-1.2.1-bin/conf/hive-site.xml
 
 <name>javax.jdo.option.ConnectionURL</name>
 <value>jdbc:mysql://master:3306/hive?createDatabaseIfNotExist=true&amp;useSSL=false</value>
@@ -383,10 +394,6 @@ vi /usr/local/src/apache-hive-2.0.0-bin/conf/hive-site.xml
 <property>
 <name>hive.metastore.schema.verification</name>
 <value>false</value>
-<description>
-Enforce metastore schema version consistency.
-True: Verify that version information stored in is compatible with one from Hive jars. Also disable automatic False: Warn if the version information stored in metastore does not match with one from in Hive jars.
-</description>
 </property>
 
 <property>
@@ -402,22 +409,22 @@ True: Verify that version information stored in is compatible with one from Hive
 </property>
 
 <name>hive.querylog.location</name>
-<value>/usr/local/src/apache-hive-2.0.0-bin/tmp</value>
+<value>/usr/local/src/apache-hive-1.2.1-bin/tmp</value>
 <description>Location of Hive run time structured log file</description>
 
 <name>hive.exec.local.scratchdir</name>
-<value>/usr/local/src/apache-hive-2.0.0-bin/tmp</value>
+<value>/usr/local/src/apache-hive-1.2.1-bin/tmp</value>
 
 <name>hive.downloaded.resources.dir</name>
-<value>/usr/local/src/apache-hive-2.0.0-bin/tmp/resources</value>
+<value>/usr/local/src/apache-hive-1.2.1-bin/tmp/resources</value>
 
 <name>hive.server2.logging.operation.log.location</name>
-<value>/usr/local/src/apache-hive-2.0.0-bin/tmp/operation_logs</value>
+<value>/usr/local/src/apache-hive-1.2.1-bin/tmp/operation_logs</value>
 
 # 创建 hive 目录下的 tmp目录
-mkdir /usr/local/src/apache-hive-2.0.0-bin/tmp
+mkdir /usr/local/src/apache-hive-1.2.1-bin/tmp
 # 拷贝 mysql 驱动包
-cp /opt/software/mysql-connector-java-5.1.49.jar /usr/local/src/apache-hive-2.0.0-bin/lib/
+cp /opt/software/mysql-connector-java-5.1.49.jar /usr/local/src/apache-hive-1.2.1-bin/lib/
 # 重新启动 hadoop 集群
 stop-all.sh;start-all.sh
 # 初始化 mysql 数据库
@@ -484,6 +491,8 @@ source /etc/profile
 su - hadoop
 # 启动 zookeeper 服务
 zkServer.sh start
+# 停止 zookeeper 服务
+zkServer.sh stop
 # 查看 zookeeper 服务状态
 zkServer.sh status
 ```
@@ -631,7 +640,7 @@ vi sqoop-env.sh
 export HADOOP_COMMON_HOME=/opt/software/hadoop-2.6.5
 export HADOOP_MAPRED_HOME=/opt/software/hadoop-2.6.5
 export HBASE_HOME=/usr/local/src/hbase-1.2.1
-export HIVE_HOME=/usr/local/src/apache-hive-2.0.0-bin
+export HIVE_HOME=/usr/local/src/apache-hive-1.2.1-bin
 
 # 追加 /etc/profile 文件
 vi /etc/profile
@@ -643,7 +652,7 @@ export CLASSPATH=$CLASSPATH:$SQOOP_HOME/lib
 # 拷贝 jdbc 驱动包
 cp /opt/software/mysql-connector-java-5.1.49.jar /usr/local/src/sqoop-1.4.7.bin__hadoop-2.6.0/lib/
 # 配置 sqoop 连接 hive
-cp /usr/local/src/apache-hive-2.0.0-bin/lib/hive-common-2.0.0.jar /usr/local/src/sqoop-1.4.7.bin__hadoop-2.6.0/lib/
+cp /usr/local/src/apache-hive-1.2.1-bin/lib/hive-common-1.2.1.jar /usr/local/src/sqoop-1.4.7.bin__hadoop-2.6.0/lib/
 # 测试 sqoop 是否正常连接 密码Password123$
 sqoop list-databases --connect jdbc:mysql://127.0.0.1:3306/ --username root -P
 ```
