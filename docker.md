@@ -124,7 +124,7 @@ docker commit <CONTAINER_ID> <IMAGE:TAG>
 
 ## docker container
 ```bash
-# 创建 container -i 交互 -t 可以进入 -d 后台执行 -p : 端口映射 -v 存储映射 -c shell -e 参数传递
+# 创建 container -i 交互 -t 可以进入 -d 后台执行 -p : 端口映射 -v 存储映射 -c shell -e 参数传递 --net 指定网络
 # 启动新的 container
 docker run --name
 e.g. | docker run --name mysql -v /home/wengy/mysql/conf.d:/etc/mysql/conf.d -v /home/wengy/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=000000 -d mysql
@@ -198,15 +198,20 @@ curl http://:5000/v2/_catalog
 
 ```
 
-## docker file
-```bash
-
-```
-
 ## docker network
 ```bash
+- 如果不指定网卡则默认使用 bridge
+- bridge: 桥接模式
+- none: 不配置
+- host: 主机模式
+- container: 容器内联通
 
-
+# 查看 dockers network 列表
+docker network ls
+# 创建 network
+docker network create --driver bridge --subnet 192.168.0.0/16 --gateway 192.168.0.1 mynet
+# 查看 network 的详细信息
+docker network inspect <NETWORK_NAME>
 ```
 
 ## docker container volumes
@@ -216,14 +221,64 @@ curl http://:5000/v2/_catalog
 - 具名挂载: 指定要挂载的 volume 名: container 中的路径
 - 匿名挂载: 只声明容器内的路径，将随机生成 volume 名
 - 指定路径挂载：指定要挂载的系统路径: container 中的路径
+- 数据卷容器的生命周期持续到没有 container 使用为止
 # 查看 volumes 列表
 docker volume ls
 # 查看 volume 详细信息
 docker volume inspect <VOLUME_ID>
 # 设置映射读取方式
 docker run -d -it -v <DIR>:<DIR>:rw/ro <IMAGE:TAG>
+# 设置数据卷容器, 当父容器删除时，其他 container 的数据并不受影响
+docker run -it --volumes-from <IMAGE_ID> <IMAGE:TAG>
 ```
 
+## docker file
+```bash
+- docker file 用来构建dokcer镜像的脚本文件
+- 大部分 image 都是基于 scratch 构建
+e.g.
+
+FROM centos
+
+VOLUME ["voume01", "volume02"]
+
+CMD echo "---end---"
+CMD /bin/bash
+# 生成 image 文件
+docker build -f <FILE_NAME> -t <IMAGE:TAG> <DIR>
+# 常用指令
+- FROM: 基础镜像
+- MAINTAINER: 维护者的信息
+- RUN: 运行命令
+- ADD: 添加文件，自动解压
+- WORKDIR: 设置当前工作目录
+- VOLUME: 设置卷，挂载主机目录
+- EXPOSE: 指定对外端口
+- CMD: 指定容器启动时运行的命令，只有最后一个会生效
+- ENTRYPOINT: 指定容器启动时运行的命令，可以追加命令
+- ONBUILD: 当构建一个被继承的 docker file 时触发
+- COPY: 拷贝文件到镜像中
+- ENV: 构建时候设置环境变量
+
+e.g.
+
+FROM centos
+MAINTAINER wengy<11111111@qq.com>
+
+ENV MYPATH /usr/local
+WORKDIR $MYPATH
+
+RUN yum install -y vim
+RUN yum install -y net-tools
+
+EXPOSE 8000
+CMD echo $PATH
+CMD echo "---success---"
+CMD /bin/bash
+
+# 查看 image 的构建过程
+docker history <IMAGE_ID>
+```
 ## docker compose
 ```bash
 # 安装 docker compose 组件 docker compose 二进制文件需要存放在/usr/local/bin/
