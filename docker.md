@@ -107,7 +107,7 @@ systemctl restart docker
 ## docker image
 ```bash
 # 修改 docker 镜像名
-docker tag
+docker tag <IMAGE_ID> <NEW_IMAGE:TAG>
 # 导入本地 docker 镜像
 docker load -i
 # 导入远程 docker 镜像
@@ -120,11 +120,15 @@ docker rmi <IMAGE_ID>
 docker rmi -f $(docker images -qa)
 # 提交镜像 -m 描述信息 -a 作者
 docker commit <CONTAINER_ID> <IMAGE:TAG>
+# 打包成为 tar 包
+docker save
+# 解压 tar 为 image
+docker load
 ```
 
 ## docker container
 ```bash
-# 创建 container -i 交互 -t 可以进入 -d 后台执行 -p : 端口映射 -v 存储映射 -c shell -e 参数传递 --net 指定网络
+# 创建 container -i 交互 -t 可以进入 -d 后台执行 -p : 端口映射 -v 存储映射 -c shell -e 参数传递 --net 指定网络 --link 指定连通的容器 --ip 指定ip
 # 启动新的 container
 docker run --name
 e.g. | docker run --name mysql -v /home/wengy/mysql/conf.d:/etc/mysql/conf.d -v /home/wengy/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=000000 -d mysql
@@ -136,6 +140,12 @@ docker restart
 dooker stop
 # 强制停止 container
 docker kill
+# 挂起 container
+docker pause
+# 恢复 container
+dokcer unpause
+# 重命名 container
+docker rename <OLD_CONTAINER_NAME> <NEW_CONTAINER_NAME>
 # 使用新的终端进入 container
 docker exec -it <CONTAINER_ID> /bin/sh
 # 使用已经打开的终端进入 container
@@ -153,7 +163,7 @@ docker ps -aq | xargs docker rm
 ctrl + p + q
 # 查看 container的元数据
 docker inspect <CONTAINER_ID>
-# 拷贝 中的文件到宿主机
+# 拷贝 container 中的文件到宿主机
 docker cp <CONTAINER_ID>:<CONTAINER_ID_DIR> <DIR>
 # 查看 container占用的资源
 docker stats <CONTAINER_ID>
@@ -193,13 +203,11 @@ docker pull :5000/
 curl http://:5000/v2/_catalog
 ```
 
-## docker build
-```bash
-
-```
-
 ## docker network
 ```bash
+- docker 默认网卡为 docker0，使用桥接模式，采用 veth-pair 技术
+- veth-pair 虚拟设备接口，成对出现，一端连着协议，一端彼此相连，通常连接虚拟设备
+- 每当启动一个 container 后，宿主机中都会创建一个新的网卡，以veth开头
 - 如果不指定网卡则默认使用 bridge
 - bridge: 桥接模式
 - none: 不配置
@@ -212,6 +220,10 @@ docker network ls
 docker network create --driver bridge --subnet 192.168.0.0/16 --gateway 192.168.0.1 mynet
 # 查看 network 的详细信息
 docker network inspect <NETWORK_NAME>
+# 设置两个 container 使用 container name 连通，只能当前创建的 container 连通 --link 指定的 container，反之不行
+# --link 则是通过配置 /etc/hosts 实现
+docker run -it --link <CONTAINER_NAME> <IMAGE:TAG>
+dockers network connect <NETWORK_NAME> <CONTAINER_NAME
 ```
 
 ## docker container volumes
@@ -232,9 +244,9 @@ docker run -d -it -v <DIR>:<DIR>:rw/ro <IMAGE:TAG>
 docker run -it --volumes-from <IMAGE_ID> <IMAGE:TAG>
 ```
 
-## docker file
+## dockerfile
 ```bash
-- docker file 用来构建dokcer镜像的脚本文件
+- dockerfile 用来构建dokcer镜像的脚本文件
 - 大部分 image 都是基于 scratch 构建
 e.g.
 
@@ -278,6 +290,28 @@ CMD /bin/bash
 
 # 查看 image 的构建过程
 docker history <IMAGE_ID>
+# 构建 tomcat
+
+FROM centos
+MAINTAINER wengy<1111111111@qq.com>
+
+ADD jdk-8u241-linux-x64.tar.gz /usr/local/
+ADD apache-tomcat-9.0.38.tar.gz /usr/local/
+
+RUN yum install -y vim
+ENV MYPATH /usr/local/
+WORKDIR $MYPATH
+
+ENV JAVA_HOME /usr/local/jdk1.8.0_241
+ENV CLASSPATH $JAVA_HOME/lib/di.jar:$JAVA_HOME/lib/tools.jar
+ENV CATALINA_HOME /usr/local/apache-tomcat-9.0.38
+ENV CATALINA_BASH /usr/local/apache-tomcat-9.0.38
+ENV PATH $PATH:$JAVA_HOME/bin:$CATALINA_HOME/lib:$CATALINA_HOME/bin
+
+EXPOSE 8080
+
+CMD /usr/local/apache-tomcat-9.0.38/bin/startup.sh && tail -F /usr/local/apache-tomcat-9.0.38/logs/catalina.out
+
 ```
 ## docker compose
 ```bash
@@ -289,96 +323,16 @@ chmod +x /usr/local/bin/docker-compose
 docker-compose -version
 ```
 
-## harbor
-
-### SSL
+## dockers stack
 ```bash
-# 创建 ssl 目录并进入
-mkdir -p /data/ssl;cd /data/ssl
-# 创建安全认证
-openssl req -newkey rsa:4096 -nodes -sha256 -keyout ca.key -x509 -days 2.235 -out ca.crt
-# 签发 www.yidaoyun.com 证书
-openssl req -newkey rsa:4096 -nodes -sha256 -keyout www.yidaoyun.com.key -out www.yidaoyun.com.csr
-# 自签发
-openssl x509 -req -days 2.235 -in www.yidaoyun.com.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out www.yidaoyun.com.crt
-# 将证书复制到 /etc/pki/ca-trust/source/anchor
-cp -rfv www.yidaoyun.com.crt /etc/pki/ca-trust/source/anchors/
-# 设置系统加载证书
-update-ca-trust enable update-ca-trust extract
 ```
 
-### master
+## docker config
 ```bash
-# 解压 harbor 离线安装包，通常解压在/opt目录
-tar -zxvf harbor-offline-installer-v.tgz
-# 配置 harbor.cfg 文件，设置IP地址和密码，开放 https 关闭 http ，管理员账号为: admin 1.5.x版本
-vi /harbor/harbor.cfg
-hostname = ui_url_protocol=https ssl_cert = /data/ssl/www.yidaoyun.com.crt ssl_cert_key = /data/ssl/www.yidaoyun.com.key harbor_admin_password:
-# 配置 harbor.yml 文件，设置 IP 地址和密码，开放 https 关闭 http ，管理员账号为: admin 1.9.x版本
-vi /harbor/harbor.yml
-hostname = https: prot:443 certificate: /data/ssl/www.yidaoyun.com.crt private_key: /data/ssl/www.yidaoyun.com.key harbor_admin_password:
-# 执行 prepare 文件，生成 harbor 配置文件
-./prepare
-# 执行 install.sh 加载镜像，开启安全扫描功能
-./install.sh --with-notary --with-clair
-# 编辑 docker 服务器配置文件，将harbor服务器地址添加到其中
-vim /etc/docker/daemon.json
-
-{ "insecure-registries" :[""] }
-
-# 重新启动 daemon
-systemctl daemon-reload
-# 重启 docker 服务
-systemctl restart docker
-# 关闭 harbor 仓库
-docker-compose down
-# 启动 harbor 仓库
-docker-compose up -d
-# 登录 harbor 仓库
-docker login https://
 ```
 
-### client
+## docker secret
 ```bash
-# 将服务器上的安全证书下发到客户机
-scp -r /data/ssl/www.yidaoyun.com.crt 192.168.30.30:/etc/pki/ca-trust/source/anchors
-# 在客户机上设置系统加载证书
-update-ca-trust enable update-ca-trust extract
-# 重启客户机上的 docker 服务
-systemctl restart docker
-# 编辑客户机上的 docker 配置文件，将 harbor 服务器地址添加到其中
-vi /etc/docker/daemon.json
-
-{ "insecure-registries" :[""] }
-# 重新启动 daemon
-systemctl daemon-reload
-# 重启 docker 服务
-systemctl restart docker
-# 切换目录至安全证书所在目录
-cd /etc/pki/ca-trust/source/anchors
-# 登录 harbor 仓库
-docker login https://
-# 修改镜像名称
-docker tag ?
-# 将本地镜像推送到本地 harbor 服务器
-docker push ?
-# 从本地 harbor 服务器拉取镜像
-docker pull ?
-```
-
-### slaver
-```bash
-# 在从服务器安装本地 harbor 服务器仓库，具体步骤参考主服务器，创建安全证书时需将域名更改为 www2.yidaoyun.com
-# 主服务器从从服务器上拷贝安全证书
-scp 192.168.30.20:/data/ssl/www2.yidaoyun.com.crt /etc/pki/ca-trust/source/anchors/
-# 设置系统加载证书
-update-ca-trust enable update-ca-trust extract
-# 重新启动 docker 服务
-systemctl restart docker
-# 主服务器关闭 harbor 服务，并重新安装 harbor 服务
-docker-compose down;./prepare;./install.sh --with-notary --with-clair
-#使用浏览器访问主服务器 harbor 页面，在仓库管理中新建目标进行测试连接
-#测试成功，点击确认后在复制管理中新建规则，名称为 slave，项目为 library，触发模式为即刻
 ```
 
 ## docker swarm
@@ -426,6 +380,102 @@ docker service update --publish-add 8080:80
 # 删除 docker 服务
 docker service rm
 ```
+
+## harbor
+
+### SSL
+```bash
+# 创建 ssl 目录并进入
+mkdir -p /data/ssl;cd /data/ssl
+# 创建安全认证
+openssl req -newkey rsa:4096 -nodes -sha256 -keyout ca.key -x509 -days 2.235 -out ca.crt
+# 签发 www.yidaoyun.com 证书
+openssl req -newkey rsa:4096 -nodes -sha256 -keyout www.yidaoyun.com.key -out www.yidaoyun.com.csr
+# 自签发
+openssl x509 -req -days 2.235 -in www.yidaoyun.com.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out www.yidaoyun.com.crt
+# 将证书复制到 /etc/pki/ca-trust/source/anchor
+cp -rfv www.yidaoyun.com.crt /etc/pki/ca-trust/source/anchors/
+# 设置系统加载证书
+update-ca-trust enable update-ca-trust extract
+```
+
+### master
+```bash
+# 解压 harbor 离线安装包，通常解压在/opt目录
+tar -zxvf harbor-offline-installer-v.tgz
+# 配置 harbor.cfg 文件，设置IP地址和密码，开放 https 关闭 http ，管理员账号为: admin 1.5.x版本
+vi /harbor/harbor.cfg
+hostname = ui_url_protocol=https ssl_cert = /data/ssl/www.yidaoyun.com.crt ssl_cert_key = /data/ssl/www.yidaoyun.com.key harbor_admin_password:
+# 配置 harbor.yml 文件，设置 IP 地址和密码，开放 https 关闭 http ，管理员账号为: admin 1.9.x版本
+vi /harbor/harbor.yml
+hostname = https: prot:443 certificate: /data/ssl/www.yidaoyun.com.crt private_key: /data/ssl/www.yidaoyun.com.key harbor_admin_password:
+# 执行 prepare 文件，生成 harbor 配置文件
+./prepare
+# 执行 install.sh 加载镜像，开启安全扫描功能
+./install.sh --with-notary --with-clair
+# 编辑 docker 服务器配置文件，将harbor服务器地址添加到其中
+vim /etc/docker/daemon.json
+
+{ "insecure-registries" :[""] }
+
+# 重新启动 daemon
+systemctl daemon-reload
+# 重启 docker 服务
+systemctl restart docker
+# 关闭 harbor 仓库
+docker-compose down
+# 启动 harbor 仓库
+docker-compose up -d
+# 登录 harbor 仓库 -u 用户
+docker login https://
+# 退出 harbor 仓库
+docker logout
+```
+
+### client
+```bash
+# 将服务器上的安全证书下发到客户机
+scp -r /data/ssl/www.yidaoyun.com.crt 192.168.30.30:/etc/pki/ca-trust/source/anchors
+# 在客户机上设置系统加载证书
+update-ca-trust enable update-ca-trust extract
+# 重启客户机上的 docker 服务
+systemctl restart docker
+# 编辑客户机上的 docker 配置文件，将 harbor 服务器地址添加到其中
+vi /etc/docker/daemon.json
+
+{ "insecure-registries" :[""] }
+# 重新启动 daemon
+systemctl daemon-reload
+# 重启 docker 服务
+systemctl restart docker
+# 切换目录至安全证书所在目录
+cd /etc/pki/ca-trust/source/anchors
+# 登录 harbor 仓库
+docker login https://
+# 修改镜像名称
+docker tag ?
+# 将本地镜像推送到本地 harbor 服务器
+docker push ?
+# 从本地 harbor 服务器拉取镜像
+docker pull ?
+```
+
+### slaver
+```bash
+# 在从服务器安装本地 harbor 服务器仓库，具体步骤参考主服务器，创建安全证书时需将域名更改为 www2.yidaoyun.com
+# 主服务器从从服务器上拷贝安全证书
+scp 192.168.30.20:/data/ssl/www2.yidaoyun.com.crt /etc/pki/ca-trust/source/anchors/
+# 设置系统加载证书
+update-ca-trust enable update-ca-trust extract
+# 重新启动 docker 服务
+systemctl restart docker
+# 主服务器关闭 harbor 服务，并重新安装 harbor 服务
+docker-compose down;./prepare;./install.sh --with-notary --with-clair
+#使用浏览器访问主服务器 harbor 页面，在仓库管理中新建目标进行测试连接
+#测试成功，点击确认后在复制管理中新建规则，名称为 slave，项目为 library，触发模式为即刻
+```
+
+
 ## portainer
 
 ```bash
