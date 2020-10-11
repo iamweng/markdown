@@ -218,12 +218,14 @@ curl http://:5000/v2/_catalog
 docker network ls
 # 创建 network
 docker network create --driver bridge --subnet 192.168.0.0/16 --gateway 192.168.0.1 mynet
+# 删除 network
+docker network rm <NETWORK_ID>
 # 查看 network 的详细信息
 docker network inspect <NETWORK_NAME>
 # 设置两个 container 使用 container name 连通，只能当前创建的 container 连通 --link 指定的 container，反之不行
 # --link 则是通过配置 /etc/hosts 实现
 docker run -it --link <CONTAINER_NAME> <IMAGE:TAG>
-dockers network connect <NETWORK_NAME> <CONTAINER_NAME
+dockers network connect <NETWORK_NAME> <CONTAINER_NAME>
 ```
 
 ## docker container volumes
@@ -316,11 +318,103 @@ CMD /usr/local/apache-tomcat-9.0.38/bin/startup.sh && tail -F /usr/local/apache-
 ## docker compose
 ```bash
 # 安装 docker compose 组件 docker compose 二进制文件需要存放在/usr/local/bin/
-curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+curl -L "https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 # 赋予 docker compose 执行的权力
 chmod +x /usr/local/bin/docker-compose
 # 验证 docker compose 是否正确安装
 docker-compose -version
+# 构建 compose
+dokcer-compose build
+# 开始 compose -d 后台 --build 构建
+docker-compose up
+# compose 执行过程
+创建网络/执行 Docker-compose.yaml /启动服务
+# 停止 compose
+docker-compose down
+```
+
+### docker compose template
+```bash
+version: ""
+services:
+    web:
+        build: .
+            dockerfile:
+        ports:
+            -: "8080:8088"
+        depends_on:
+            - mysql
+            - redis
+        depoly:
+            replicas: 2
+    redis:
+        image: redis:alpine
+        network: ""
+    mysql:
+        image: mysql:latest
+volumes:
+networks:
+configs:
+```
+
+### dockers compose case
+```bash
+# 编写 app.py
+
+import time
+
+import redis
+from flask import Flask
+
+app = Flask(__name__)
+cache = redis.Redis(host='redis', port=6379)
+
+def get_hit_count():
+    retries = 5
+    while True:
+        try:
+            return cache.incr('hits')
+        except redis.exceptions.ConnectionError as exc:
+            if retries == 0:
+                raise exc
+            retries -= 1
+            time.sleep(0.5)
+
+@app.route('/')
+def hello():
+    count = get_hit_count()
+    return 'Hello World! I have been seen {} times.\n'.format(count)
+
+# 编写 requirement.txt
+
+flask
+redis
+
+# 编写 Dockerfile
+
+FROM python:3.7-alpine
+WORKDIR /code
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+RUN apk add --no-cache gcc musl-dev linux-headers
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+EXPOSE 5000
+COPY . .
+CMD ["flask", "run"]
+
+# 定义 service 在 compose 文件
+
+version: '3'
+services:
+  web:
+    build: .    # 使用 Dockerfile 文件在当前目录下构建镜像，在当前目录需要有 Docketfile 文件
+    ports:
+      - "5000:5000"
+    volumes:
+      - .: /code
+  redis:
+    image: "redis:alpine"
 ```
 
 ## dockers stack
