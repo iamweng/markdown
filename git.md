@@ -32,7 +32,7 @@ git add <FILE_NAME>
 git add .
 # 追踪文件
 git add
-# 取消追踪
+# 取消追踪文件
 git rm
 # 丢弃修改
 git  checkout
