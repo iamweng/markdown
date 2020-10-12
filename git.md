@@ -30,6 +30,12 @@ git remote add origin git@github.com:<USER_NAME>/<REPOSITORY_NAME>.git
 git add <FILE_NAME>
 # 添加所有文件到暂存区
 git add .
+# 追踪文件
+git add
+# 取消追踪
+git rm
+# 丢弃修改
+git  checkout
 # 忽略的文件
 .gitignore
 # 提交到本地仓库，不建议使用git commit -m "<COMMIT_MESSAGE>"，建议提交遵循规范
