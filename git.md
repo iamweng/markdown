@@ -95,7 +95,7 @@ git mv <FILE_NAME>/<FOLDER_NAME>
 # 创建分支
 git branch <BRANCH_NAME>
 # 创建分支并切换
-git checkout <BRANCH_NAME>
+git checkout -b <BRANCH_NAME>
 # 切换分支
 git checkout <BRANCH_NAME>
 # 合并某个分支到当前分支
