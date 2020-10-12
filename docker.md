@@ -419,6 +419,9 @@ services:
 
 ## dockers stack
 ```bash
+- 用来在集群上部署项目
+# 部署项目
+docker stack depoly <COMPOSE_FILE.yaml>
 ```
 
 ## docker config
@@ -444,6 +447,10 @@ systemctl restart docker
 docker pull swarm
 # 在主服务器初始化 docker 集群，ip 地址为本机 ip
 docker swarm init --advertise-addr 192.168.30.10
+# 生成 manager 节点令牌
+docker swarm join-token manager
+# 生成 worker 节点令牌
+docker swarm join-token worker
 # 将初始化后生成的命令在 node 上运行，使其加入集群，例如:
 docker swarm join --token SWMTKN-1-03y3x54rd7b2563c92mj5t3xi2d2571kusr28m339u2fcbz6xd-darhu4rd54he17o09lsrz7v37 192.168.30.10:2377
 # 查看 docker 集群列表
@@ -452,27 +459,36 @@ docker node ls
 docker swarm leave
 # 解散当前 docker 集群
 docker swarm leave --force
+# 设置节点进入维护模式
+docker node update --availability drain
 # 创建 portainer 卷来进行持久化管理
 docker volume create portainer_data
 # 在主服务器安装 portainer 管理界面服务
 docker service create --name portainer --publish 9000:9000 --replicas=1 --constraint 'node.role==manager' --mount type=bind,src=//var/run/docker.sock,dst=/var/run/docker.sock --mount type=volume,src=portainer_data,dst=/data portainer/portainer -H unix:///var/run/docker.sock
 # 使用浏览器访问主服务器的 9000 端口进入 portainer 管理界面
+```
+
+## docker service
+```bash
+- 服务在集群中的任意节点都可以访问
 # 创建一个具有两个 nginx 容器名字为 web 的服务，假如两个节点则每个节点都会部署一个容器
 docker service create --name web --replicas 2 nginx
-# 创建一个具有两个 nginx 容器名字为 web 的服务，且带有端口映射
+# 创建一个具有两个 nginx 容器名字为 web 的服务，且带有端口映射 --mode replicated 只在工作节点运行 -- global 工作节点和管理节点都运行（默认）
 docker service create --name web --publish 8080:80 --replicas 2 nginx
+# 更新 nginx 服务的副本数
+docker service update --replicas 3 nginx
 # 查看 docker 服务列表
 docker service ls
 # 查看服务里所有的容器
-docker service ps
+docker service ps <SERVICE_NAME>
+# 查看服务的详细信息
+docker service inspect <SERVICE_NAME>
 # 扩容服务里的容器数量
-docker service scale =
-# 设置节点进入维护模式
-docker node update --availability drain
+docker service scale <SERVICE_NAME> = <N>
 # 设置 docker 服务端口映射
 docker service update --publish-add 8080:80
 # 删除 docker 服务
-docker service rm
+docker service rm <SERVICE_NAME>
 ```
 
 ## harbor
