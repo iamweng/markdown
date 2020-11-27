@@ -3,7 +3,7 @@
 - @Author: Yuxin Weng
 - @Date: 2020/09/29
 - @Repository: https://github.com/iamweng/markdown.git
-- @Software_URL: https://share.weiyun.com/UFTwRy vk
+- @Software_URL: https://share.weiyun.com/UFTwRyvk
 
 ## 安装之前准备
 ```bash
@@ -49,7 +49,7 @@ PATH=$PATH:$JAVA_HOME/bin:$JRE_HOME/bin
 
 # 刷新环境变量
 source /etc/profile
-# 验证 JDK 是否安装成功
+
 java -version
 ```
 

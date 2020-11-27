@@ -1,5 +1,9 @@
 # Docker
 
+- @Author: Yuxin Weng
+- @Date: 2020/10/12
+- @Repository: https://github.com/iamweng/markdown.git
+
 ## UnionFS
 - docker image 采用 UnionFS 文件系统，所有的 image 都有一个 base image， 当进行修改或添加新的内容时，就会在当前 iamge 上创建新的 image 层
 - dockers image 都是只读的，当容器启动时，一个新的可写成被加载到镜像的顶层，通常被称为容器层，容器之下的都叫镜像层
