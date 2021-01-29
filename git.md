@@ -1,7 +1,7 @@
 #Git
 
 ## ssh
-```git
+```bash
 # 生成ssh密钥
 ssh-keygen -t rsa
 ssh-keygen -t rsa -C "<EMAIL>"
@@ -13,7 +13,7 @@ ssh -T git@github.com
 ## 代码仓库
 
 ### 创建仓库
-```git
+```bash
 # 改变当前目录
 cd <dir>
 # 初始化仓库
@@ -25,7 +25,7 @@ git remote add origin git@github.com:<USER_NAME>/<REPOSITORY_NAME>.git
 ```
 
 ### 添加文件到仓库
-```git
+```bash
 # 添加单个文件到暂存区
 git add <FILE_NAME>
 # 添加所有文件到暂存区
@@ -47,7 +47,7 @@ git diff
 ```
 
 ### 仓库配置
-```git
+```bash
 # 配置全局用户名
 git config --global user.name "<USER_NAME>"
 # 配置全局邮箱
@@ -59,7 +59,7 @@ git config  user.email "<EMAIL_ADDR>"
 ```
 
 ## 代码版本/提交切换
-```git
+```bash
 # 查看提交详情
 git log
 # 查看提交简介
